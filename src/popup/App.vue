@@ -15,6 +15,10 @@ async function snapCurrentTab() {
     status.value = 'error'
   }
 }
+
+function openOptions() {
+  chrome.runtime.openOptionsPage()
+}
 </script>
 
 <template>
@@ -40,7 +44,7 @@ async function snapCurrentTab() {
       <a
         href="#"
         class="text-xs text-gray-500 hover:text-gray-700"
-        @click.prevent="chrome.runtime.openOptionsPage()"
+        @click.prevent="openOptions()"
       >
         Settings
       </a>

@@ -6,8 +6,8 @@ const settings = ref<Settings>({ ...DEFAULT_SETTINGS })
 const saved = ref(false)
 
 onMounted(async () => {
-  const stored = await chrome.storage.sync.get(DEFAULT_SETTINGS)
-  settings.value = stored as Settings
+  const stored = await chrome.storage.sync.get(DEFAULT_SETTINGS as unknown as Record<string, unknown>)
+  settings.value = stored as unknown as Settings
 })
 
 async function save() {

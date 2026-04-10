@@ -17,6 +17,7 @@
     },
     "types": ["chrome", "vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.vue"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/**/test-setup.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

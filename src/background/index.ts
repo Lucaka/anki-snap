@@ -13,7 +13,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
   const selection: SnapSelection = {
     text: info.selectionText ?? '',
-    url: info.pageUrl,
+    url: info.pageUrl ?? '',
     title: tab.title ?? '',
     timestamp: Date.now(),
   }
