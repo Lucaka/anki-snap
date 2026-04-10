@@ -1,38 +1,26 @@
-import type { Message, SnapSelection } from '@/shared/types'
-
-// ── Message handler ───────────────────────────────────────────────────────────
+import type { Message } from '@/shared/types'
 
 chrome.runtime.onMessage.addListener(
   (message: Message, _sender, sendResponse) => {
-    if (message.type === 'SNAP_SELECTION') {
-      const selection = buildSelection()
-      sendResponse(selection)
-    }
+    console.log('[content] received message:', message.type)
+    sendResponse({ ok: true })
     return true
   },
 )
 
-// ── Keyboard shortcut: Ctrl/Cmd + Shift + S ───────────────────────────────────
+function getSelectedText(): string {
+  return window.getSelection()?.toString().trim() ?? ''
+}
 
 document.addEventListener('keydown', (e) => {
+  // Ctrl+Shift+S (or Cmd+Shift+S on Mac) to snap selection
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
-    const selection = buildSelection()
-    if (!selection.text) return
+    const text = getSelectedText()
+    if (!text) return
 
-    chrome.runtime.sendMessage<Message<SnapSelection>>({
+    chrome.runtime.sendMessage<Message<{ text: string }>>({
       type: 'SNAP_SELECTION',
-      payload: selection,
+      payload: { text },
     })
   }
 })
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function buildSelection(): SnapSelection {
-  return {
-    text: window.getSelection()?.toString().trim() ?? '',
-    url: location.href,
-    title: document.title,
-    timestamp: Date.now(),
-  }
-}

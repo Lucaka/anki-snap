@@ -1,8 +1,9 @@
-// ── Anki provider ─────────────────────────────────────────────────────────────
-
-export type AnkiProvider = 'ankiconnect' | 'ankiweb'
-
-// ── Domain models ─────────────────────────────────────────────────────────────
+export interface AnkiCard {
+  front: string
+  back: string
+  tags?: string[]
+  deckName?: string
+}
 
 export interface SnapSelection {
   text: string
@@ -10,8 +11,6 @@ export interface SnapSelection {
   title: string
   timestamp: number
 }
-
-// ── Extension messaging ───────────────────────────────────────────────────────
 
 export type MessageType =
   | 'SNAP_SELECTION'
@@ -24,25 +23,14 @@ export interface Message<T = unknown> {
   payload?: T
 }
 
-// ── Settings ──────────────────────────────────────────────────────────────────
-
 export interface Settings {
-  /** Which backend to use for creating cards */
-  ankiProvider: AnkiProvider
-
-  // AnkiConnect options (only used when ankiProvider === 'ankiconnect')
   ankiConnectUrl: string
-
-  // Shared card defaults
   defaultDeck: string
-  defaultModel: string
   defaultTags: string[]
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  ankiProvider: 'ankiconnect',
   ankiConnectUrl: 'http://localhost:8765',
   defaultDeck: 'Default',
-  defaultModel: 'Basic',
   defaultTags: [],
 }
