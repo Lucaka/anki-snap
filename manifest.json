@@ -37,6 +37,8 @@
     "contextMenus"
   ],
   "host_permissions": [
-    "http://localhost/*"
+    "http://localhost/*",
+    "https://sync.ankiweb.net/*",
+    "https://ankiuser.net/*"
   ]
 }
