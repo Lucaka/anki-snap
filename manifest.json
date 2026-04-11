@@ -37,6 +37,7 @@
     "contextMenus"
   ],
   "host_permissions": [
-    "http://localhost/*"
+    "http://localhost/*",
+    "https://api.openai.com/*"
   ]
 }
