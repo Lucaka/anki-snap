@@ -1,197 +1,198 @@
-import type { AnkiCardData, Message, Settings } from '@/shared/types'
-import { DEFAULT_SETTINGS } from '@/shared/types'
+import type { AnkiCardData, Message, Settings } from "@/shared/types";
+import { DEFAULT_SETTINGS } from "@/shared/types";
 
 // ==================== State ====================
 
-let settings: Settings = { ...DEFAULT_SETTINGS }
-let shadowRoot: ShadowRoot | null = null
-let iconEl: HTMLElement | null = null
-let panelEl: HTMLElement | null = null
-let selectionTimer: ReturnType<typeof setTimeout> | null = null
-let pendingText = ''
-let currentCards: AnkiCardData[] = []
-let selectedIndices = new Set<number>()
+let settings: Settings = { ...DEFAULT_SETTINGS };
+let shadowRoot: ShadowRoot | null = null;
+let iconEl: HTMLElement | null = null;
+let panelEl: HTMLElement | null = null;
+let selectionTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingText = "";
+let currentCards: AnkiCardData[] = [];
+let selectedIndices = new Set<number>();
 
 // ==================== Bootstrap ====================
 
 async function init() {
-  const stored = await chrome.storage.sync.get(Object.keys(DEFAULT_SETTINGS))
-  settings = { ...DEFAULT_SETTINGS, ...(stored as Partial<Settings>) }
+  const stored = await chrome.storage.sync.get(Object.keys(DEFAULT_SETTINGS));
+  settings = { ...DEFAULT_SETTINGS, ...(stored as Partial<Settings>) };
 
-  const host = document.createElement('div')
+  const host = document.createElement("div");
   host.style.cssText =
-    'all:initial;position:fixed;top:0;left:0;z-index:2147483647;pointer-events:none;'
-  document.documentElement.appendChild(host)
-  shadowRoot = host.attachShadow({ mode: 'open' })
+    "all:initial;position:fixed;top:0;left:0;z-index:2147483647;pointer-events:none;";
+  document.documentElement.appendChild(host);
+  shadowRoot = host.attachShadow({ mode: "open" });
 
-  const style = document.createElement('style')
-  style.textContent = STYLES
-  shadowRoot.appendChild(style)
+  const style = document.createElement("style");
+  style.textContent = STYLES;
+  shadowRoot.appendChild(style);
 
-  document.addEventListener('mouseup', handleMouseUp)
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeAll()
-  })
-  document.addEventListener('mousedown', handleDocumentMouseDown)
+  document.addEventListener("mouseup", handleMouseUp);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAll();
+  });
+  document.addEventListener("mousedown", handleDocumentMouseDown);
 
-  chrome.storage.onChanged.addListener(changes => {
+  chrome.storage.onChanged.addListener((changes) => {
     for (const [k, { newValue }] of Object.entries(changes)) {
-      if (k in settings) (settings as unknown as Record<string, unknown>)[k] = newValue
+      if (k in settings) (settings as unknown as Record<string, unknown>)[k] = newValue;
     }
-  })
+  });
 }
 
 // ==================== Selection → Icon ====================
 
 function handleMouseUp() {
-  if (selectionTimer) clearTimeout(selectionTimer)
+  if (selectionTimer) clearTimeout(selectionTimer);
   selectionTimer = setTimeout(() => {
-    const text = window.getSelection()?.toString().trim() ?? ''
+    const text = window.getSelection()?.toString().trim() ?? "";
     if (text && settings.showFloatingIcon) {
-      pendingText = text
-      placeIcon()
+      pendingText = text;
+      placeIcon();
     } else if (!text) {
-      hideIcon()
+      hideIcon();
     }
-  }, 300)
+  }, 300);
 }
 
 function placeIcon() {
-  const sel = window.getSelection()
-  if (!sel?.rangeCount) return
-  const rect = sel.getRangeAt(0).getBoundingClientRect()
+  const sel = window.getSelection();
+  if (!sel?.rangeCount) return;
+  const rect = sel.getRangeAt(0).getBoundingClientRect();
 
-  const S = 32
-  const M = 8
-  let x = rect.right + 6
-  let y = rect.bottom + 6
-  if (x + S > window.innerWidth - M) x = rect.left - S - M
-  if (y + S > window.innerHeight - M) y = rect.top - S - M
+  const S = 32;
+  const M = 8;
+  let x = rect.right + 6;
+  let y = rect.bottom + 6;
+  if (x + S > window.innerWidth - M) x = rect.left - S - M;
+  if (y + S > window.innerHeight - M) y = rect.top - S - M;
 
   if (!iconEl) {
-    iconEl = document.createElement('button')
-    iconEl.className = 'as-icon'
-    iconEl.title = '點擊生成 Anki 卡片'
-    iconEl.innerHTML = ICON_SVG
-    iconEl.addEventListener('click', onIconClick)
-    shadowRoot!.appendChild(iconEl)
+    iconEl = document.createElement("button");
+    iconEl.className = "as-icon";
+    iconEl.title = "點擊生成 Anki 卡片";
+    iconEl.innerHTML = ICON_SVG;
+    iconEl.addEventListener("click", onIconClick);
+    shadowRoot!.appendChild(iconEl);
   }
 
-  iconEl.style.cssText = `left:${x}px;top:${y}px;display:flex;pointer-events:auto;`
+  iconEl.style.cssText = `left:${x}px;top:${y}px;display:flex;pointer-events:auto;`;
 }
 
 function hideIcon() {
-  if (iconEl) iconEl.style.display = 'none'
+  if (iconEl) iconEl.style.display = "none";
 }
 
 // ==================== Icon → Panel ====================
 
 function onIconClick() {
-  const text = pendingText
-  hideIcon()
-  openPanel(text)
+  const text = pendingText;
+  hideIcon();
+  openPanel(text);
 }
 
 // ==================== Panel ====================
 
 function openPanel(text: string) {
-  if (!shadowRoot) return
-  pendingText = text
-  currentCards = []
-  selectedIndices = new Set()
+  if (!shadowRoot) return;
+  pendingText = text;
+  currentCards = [];
+  selectedIndices = new Set();
 
-  const sel = window.getSelection()
-  let x = window.innerWidth - 404
-  let y = 80
+  const sel = window.getSelection();
+  let x = window.innerWidth - 404;
+  let y = 80;
   if (sel?.rangeCount) {
-    const r = sel.getRangeAt(0).getBoundingClientRect()
-    x = clamp(r.left, 16, window.innerWidth - 404)
-    y = r.bottom + 12
-    if (y + 460 > window.innerHeight) y = Math.max(16, r.top - 472)
+    const r = sel.getRangeAt(0).getBoundingClientRect();
+    x = clamp(r.left, 16, window.innerWidth - 404);
+    y = r.bottom + 12;
+    if (y + 460 > window.innerHeight) y = Math.max(16, r.top - 472);
   }
 
-  if (panelEl) panelEl.remove()
-  panelEl = document.createElement('div')
-  panelEl.className = 'as-panel'
-  panelEl.style.cssText = `left:${x}px;top:${y}px;pointer-events:auto;`
-  panelEl.innerHTML = PANEL_SHELL
-  panelEl.querySelector('.as-close')!.addEventListener('click', closeAll)
-  shadowRoot.appendChild(panelEl)
+  if (panelEl) panelEl.remove();
+  panelEl = document.createElement("div");
+  panelEl.className = "as-panel";
+  panelEl.style.cssText = `left:${x}px;top:${y}px;pointer-events:auto;`;
+  panelEl.innerHTML = PANEL_SHELL;
+  panelEl.querySelector(".as-close")!.addEventListener("click", closeAll);
+  shadowRoot.appendChild(panelEl);
 
-  showLoading()
-  fetchCards(text)
+  showLoading();
+  fetchCards(text);
 }
 
 // ==================== Panel states ====================
 
 function getBody(): HTMLElement | null {
-  return panelEl?.querySelector<HTMLElement>('.as-body') ?? null
+  return panelEl?.querySelector<HTMLElement>(".as-body") ?? null;
 }
 
 function showLoading() {
-  const b = getBody()
-  if (b) b.innerHTML = `<div class="as-loading"><div class="as-spinner"></div><span>正在生成卡片...</span></div>`
+  const b = getBody();
+  if (b)
+    b.innerHTML = `<div class="as-loading"><div class="as-spinner"></div><span>正在生成卡片...</span></div>`;
 }
 
 function showError(msg: string, isAuth: boolean) {
-  const b = getBody()
-  if (!b) return
+  const b = getBody();
+  if (!b) return;
   b.innerHTML = `
     <div class="as-error">
       <p class="as-error-msg">${esc(msg)}</p>
       <div class="as-error-btns">
         <button class="as-retry">重試</button>
-        ${isAuth ? '<button class="as-go-settings">設定 API Key</button>' : ''}
+        ${isAuth ? '<button class="as-go-settings">設定 API Key</button>' : ""}
       </div>
-    </div>`
-  b.querySelector('.as-retry')?.addEventListener('click', () => {
-    showLoading()
-    fetchCards(pendingText)
-  })
-  b.querySelector('.as-go-settings')?.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS' })
-  })
+    </div>`;
+  b.querySelector(".as-retry")?.addEventListener("click", () => {
+    showLoading();
+    fetchCards(pendingText);
+  });
+  b.querySelector(".as-go-settings")?.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" });
+  });
 }
 
 function showCards(cards: AnkiCardData[]) {
-  currentCards = cards
-  selectedIndices = new Set(cards.map((_, i) => i))
+  currentCards = cards;
+  selectedIndices = new Set(cards.map((_, i) => i));
 
-  const b = getBody()
-  if (!b) return
-  b.innerHTML = ''
+  const b = getBody();
+  if (!b) return;
+  b.innerHTML = "";
 
   cards.forEach((card, i) => {
-    const el = document.createElement('div')
-    el.className = 'as-card'
+    const el = document.createElement("div");
+    el.className = "as-card";
     el.innerHTML = `
       <label class="as-card-label">
         <input type="checkbox" class="as-cb" data-i="${i}" checked />
         <div class="as-card-info">
           <div class="as-front">${esc(card.front)}</div>
           <div class="as-back">${esc(card.back)}</div>
-          ${card.example ? `<div class="as-ex">例句：${esc(card.example)}</div>` : ''}
-          ${card.related ? `<div class="as-rel">同家族：${esc(card.related)}</div>` : ''}
+          ${card.example ? `<div class="as-ex">例句：${esc(card.example)}</div>` : ""}
+          ${card.related ? `<div class="as-rel">同家族：${esc(card.related)}</div>` : ""}
         </div>
-      </label>`
-    el.querySelector('.as-cb')?.addEventListener('change', e => {
-      const cb = e.target as HTMLInputElement
-      cb.checked ? selectedIndices.add(i) : selectedIndices.delete(i)
-      updateFooter()
-    })
-    b.appendChild(el)
-  })
+      </label>`;
+    el.querySelector(".as-cb")?.addEventListener("change", (e) => {
+      const cb = e.target as HTMLInputElement;
+      cb.checked ? selectedIndices.add(i) : selectedIndices.delete(i);
+      updateFooter();
+    });
+    b.appendChild(el);
+  });
 
-  const footer = panelEl?.querySelector<HTMLElement>('.as-footer')
-  if (footer) footer.style.display = 'flex'
-  updateFooter()
+  const footer = panelEl?.querySelector<HTMLElement>(".as-footer");
+  if (footer) footer.style.display = "flex";
+  updateFooter();
 }
 
 function updateFooter() {
-  const count = panelEl?.querySelector('.as-count')
-  if (count) count.textContent = `已選 ${selectedIndices.size} / ${currentCards.length} 張`
-  const btn = panelEl?.querySelector<HTMLButtonElement>('.as-add-btn')
-  if (btn) btn.disabled = selectedIndices.size === 0
+  const count = panelEl?.querySelector(".as-count");
+  if (count) count.textContent = `已選 ${selectedIndices.size} / ${currentCards.length} 張`;
+  const btn = panelEl?.querySelector<HTMLButtonElement>(".as-add-btn");
+  if (btn) btn.disabled = selectedIndices.size === 0;
 }
 
 // ==================== OpenAI via background ====================
@@ -199,69 +200,69 @@ function updateFooter() {
 async function fetchCards(text: string) {
   try {
     const resp = (await chrome.runtime.sendMessage({
-      type: 'GENERATE_CARDS',
+      type: "GENERATE_CARDS",
       payload: { text, settings },
-    })) as { ok: boolean; cards?: AnkiCardData[]; error?: string; status?: number }
+    })) as { ok: boolean; cards?: AnkiCardData[]; error?: string; status?: number };
 
     if (!resp?.ok) {
-      showError(resp?.error ?? '生成失敗，請稍後再試', resp?.status === 401)
-      return
+      showError(resp?.error ?? "生成失敗，請稍後再試", resp?.status === 401);
+      return;
     }
-    showCards(resp.cards ?? [])
+    showCards(resp.cards ?? []);
   } catch {
-    showError('連線失敗，請稍後再試', false)
+    showError("連線失敗，請稍後再試", false);
   }
 }
 
 // ==================== Close ====================
 
 function closeAll() {
-  hideIcon()
-  panelEl?.remove()
-  panelEl = null
+  hideIcon();
+  panelEl?.remove();
+  panelEl = null;
 }
 
 function handleDocumentMouseDown(e: MouseEvent) {
-  if (!panelEl) return
-  const path = e.composedPath()
+  if (!panelEl) return;
+  const path = e.composedPath();
   if (!path.includes(panelEl as EventTarget) && !path.includes(iconEl as EventTarget)) {
-    closeAll()
+    closeAll();
   }
 }
 
 // ==================== Message listener (context menu / popup) ====================
 
 chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
-  if (message.type === 'SHOW_SNAP_PANEL') {
+  if (message.type === "SHOW_SNAP_PANEL") {
     const text =
       (message.payload as { text?: string } | undefined)?.text ||
       window.getSelection()?.toString().trim() ||
-      ''
-    if (text) openPanel(text)
-    sendResponse({ ok: true })
-    return true
+      "";
+    if (text) openPanel(text);
+    sendResponse({ ok: true });
+    return true;
   }
-  sendResponse({ ok: true })
-  return true
-})
+  sendResponse({ ok: true });
+  return true;
+});
 
 // ==================== Utils ====================
 
 function clamp(v: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, v))
+  return Math.max(lo, Math.min(hi, v));
 }
 
 function esc(s: string) {
   return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 // ==================== Templates ====================
 
-const ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`
+const ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
 
 const PANEL_SHELL = `
 <div class="as-header">
@@ -272,7 +273,7 @@ const PANEL_SHELL = `
 <div class="as-footer" style="display:none">
   <span class="as-count"></span>
   <button class="as-add-btn" disabled>加入 Anki（即將支援）</button>
-</div>`
+</div>`;
 
 const STYLES = `
 *, *::before, *::after { box-sizing: border-box; }
@@ -462,7 +463,7 @@ const STYLES = `
   margin-top: 2px;
   line-height: 1.5;
 }
-`
+`;
 
 // ==================== Start ====================
-init()
+init();

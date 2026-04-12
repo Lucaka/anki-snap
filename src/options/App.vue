@@ -1,40 +1,42 @@
 <script setup lang="ts">
-import { ref, onMounted, toRaw } from 'vue'
-import { DEFAULT_SETTINGS, type Settings } from '@/shared/types'
+import { ref, onMounted, toRaw } from "vue";
+import { DEFAULT_SETTINGS, type Settings } from "@/shared/types";
 
-const settings = ref<Settings>({ ...DEFAULT_SETTINGS })
-const saved = ref(false)
+const settings = ref<Settings>({ ...DEFAULT_SETTINGS });
+const saved = ref(false);
 
 const OPENAI_MODEL_OPTIONS = [
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini（快速、低費用）' },
-  { value: 'gpt-4o', label: 'GPT-4o（高品質）' },
-]
+  { value: "gpt-4o-mini", label: "GPT-4o Mini（快速、低費用）" },
+  { value: "gpt-4o", label: "GPT-4o（高品質）" },
+];
 
 const GEMINI_MODEL_OPTIONS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash（快速、低費用）' },
-  { value: 'gemini-2.5-pro-preview-03-25', label: 'Gemini 2.5 Pro（高品質）' },
-]
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash（快速、低費用）" },
+  { value: "gemini-2.5-pro-preview-03-25", label: "Gemini 2.5 Pro（高品質）" },
+];
 
 const LANGUAGE_OPTIONS = [
-  '繁體中文',
-  '簡體中文',
-  '日本語',
-  '한국어',
-  'English',
-  'Español',
-  'Français',
-  'Deutsch',
-]
+  "繁體中文",
+  "簡體中文",
+  "日本語",
+  "한국어",
+  "English",
+  "Español",
+  "Français",
+  "Deutsch",
+];
 
 onMounted(async () => {
-  const stored = await chrome.storage.sync.get(DEFAULT_SETTINGS as unknown as Record<string, unknown>)
-  settings.value = stored as unknown as Settings
-})
+  const stored = await chrome.storage.sync.get(
+    DEFAULT_SETTINGS as unknown as Record<string, unknown>,
+  );
+  settings.value = stored as unknown as Settings;
+});
 
 async function save() {
-  await chrome.storage.sync.set(toRaw(settings.value))
-  saved.value = true
-  setTimeout(() => (saved.value = false), 2000)
+  await chrome.storage.sync.set(toRaw(settings.value));
+  saved.value = true;
+  setTimeout(() => (saved.value = false), 2000);
 }
 </script>
 
@@ -43,7 +45,6 @@ async function save() {
     <h1 class="text-2xl font-bold text-gray-800 mb-6">Anki Snap 設定</h1>
 
     <form class="space-y-6" @submit.prevent="save">
-
       <!-- AI Provider Section -->
       <div class="border border-gray-200 rounded-lg p-5 space-y-4">
         <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">AI 服務</h2>
@@ -52,11 +53,21 @@ async function save() {
           <label class="block text-sm font-medium text-gray-700 mb-1">服務提供者</label>
           <div class="flex gap-3">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="settings.aiProvider" type="radio" value="openai" class="accent-blue-600" />
+              <input
+                v-model="settings.aiProvider"
+                type="radio"
+                value="openai"
+                class="accent-blue-600"
+              />
               <span class="text-sm text-gray-700">OpenAI</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="settings.aiProvider" type="radio" value="gemini" class="accent-blue-600" />
+              <input
+                v-model="settings.aiProvider"
+                type="radio"
+                value="gemini"
+                class="accent-blue-600"
+              />
               <span class="text-sm text-gray-700">Google Gemini</span>
             </label>
           </div>
@@ -73,7 +84,9 @@ async function save() {
               placeholder="sk-..."
               autocomplete="off"
             />
-            <p class="mt-1 text-xs text-gray-400">從 platform.openai.com 取得，存於本機瀏覽器，不會上傳。</p>
+            <p class="mt-1 text-xs text-gray-400">
+              從 platform.openai.com 取得，存於本機瀏覽器，不會上傳。
+            </p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">模型</label>
@@ -99,7 +112,9 @@ async function save() {
               placeholder="AIza..."
               autocomplete="off"
             />
-            <p class="mt-1 text-xs text-gray-400">從 aistudio.google.com 取得，存於本機瀏覽器，不會上傳。</p>
+            <p class="mt-1 text-xs text-gray-400">
+              從 aistudio.google.com 取得，存於本機瀏覽器，不會上傳。
+            </p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">模型</label>
@@ -115,9 +130,7 @@ async function save() {
         </template>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            卡片說明語言
-          </label>
+          <label class="block text-sm font-medium text-gray-700 mb-1"> 卡片說明語言 </label>
           <select
             v-model="settings.targetLanguage"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -159,9 +172,7 @@ async function save() {
         <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Anki（進階）</h2>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            AnkiConnect URL
-          </label>
+          <label class="block text-sm font-medium text-gray-700 mb-1"> AnkiConnect URL </label>
           <input
             v-model="settings.ankiConnectUrl"
             type="url"
@@ -171,9 +182,7 @@ async function save() {
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            預設牌組
-          </label>
+          <label class="block text-sm font-medium text-gray-700 mb-1"> 預設牌組 </label>
           <input
             v-model="settings.defaultDeck"
             type="text"
@@ -192,7 +201,12 @@ async function save() {
             type="text"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="language, vocab"
-            @input="settings.defaultTags = ($event.target as HTMLInputElement).value.split(',').map(t => t.trim()).filter(Boolean)"
+            @input="
+              settings.defaultTags = ($event.target as HTMLInputElement).value
+                .split(',')
+                .map((t) => t.trim())
+                .filter(Boolean)
+            "
           />
         </div>
       </div>
@@ -206,7 +220,6 @@ async function save() {
         </button>
         <span v-if="saved" class="text-sm text-green-600">已儲存！</span>
       </div>
-
     </form>
   </div>
 </template>

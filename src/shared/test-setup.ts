@@ -30,4 +30,4 @@ globalThis.chrome = {
       addListener: vi.fn(),
     },
   },
-} as unknown as typeof chrome
+} as unknown as typeof chrome;

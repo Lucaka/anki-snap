@@ -30,14 +30,6 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": [
-    "storage",
-    "activeTab",
-    "scripting",
-    "contextMenus"
-  ],
-  "host_permissions": [
-    "http://localhost/*",
-    "https://api.openai.com/*"
-  ]
+  "permissions": ["storage", "activeTab", "scripting", "contextMenus"],
+  "host_permissions": ["http://localhost/*", "https://api.openai.com/*"]
 }

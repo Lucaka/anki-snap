@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue";
 
-const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
-const errorMsg = ref('')
+const status = ref<"idle" | "loading" | "success" | "error">("idle");
+const errorMsg = ref("");
 
 async function snapCurrentTab() {
-  status.value = 'loading'
-  errorMsg.value = ''
+  status.value = "loading";
+  errorMsg.value = "";
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (!tab.id) throw new Error('No active tab')
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab.id) throw new Error("No active tab");
 
-    await chrome.tabs.sendMessage(tab.id, { type: 'SHOW_SNAP_PANEL' })
-    status.value = 'success'
+    await chrome.tabs.sendMessage(tab.id, { type: "SHOW_SNAP_PANEL" });
+    status.value = "success";
     // Close popup so user can see the panel on the page
-    window.close()
+    window.close();
   } catch {
-    status.value = 'error'
-    errorMsg.value = '無法連接到頁面，請重新整理後再試。'
+    status.value = "error";
+    errorMsg.value = "無法連接到頁面，請重新整理後再試。";
   }
 }
 
 function openOptions() {
-  chrome.runtime.openOptionsPage()
+  chrome.runtime.openOptionsPage();
 }
 </script>
 
@@ -36,7 +36,7 @@ function openOptions() {
       :disabled="status === 'loading'"
       @click="snapCurrentTab"
     >
-      {{ status === 'loading' ? '處理中...' : '✦ Snap 選取文字' }}
+      {{ status === "loading" ? "處理中..." : "✦ Snap 選取文字" }}
     </button>
 
     <p v-if="status === 'error'" class="mt-2 text-xs text-red-600">
@@ -44,11 +44,7 @@ function openOptions() {
     </p>
 
     <div class="mt-4 pt-4 border-t border-gray-200">
-      <a
-        href="#"
-        class="text-xs text-gray-500 hover:text-gray-700"
-        @click.prevent="openOptions()"
-      >
+      <a href="#" class="text-xs text-gray-500 hover:text-gray-700" @click.prevent="openOptions()">
         ⚙ 設定（API Key、語言...）
       </a>
     </div>

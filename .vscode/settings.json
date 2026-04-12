@@ -4,6 +4,9 @@
   "editor.formatOnSaveMode": "file",
   "editor.codeActionsOnSave": {
     "source.format.oxc": "always"
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
   }
   // Or enable it for specific file types:
   // "[javascript]": {

@@ -51,14 +51,14 @@ npm test
 
 ## 技術架構
 
-| 技術 | 用途 |
-|------|------|
-| [Vue 3](https://vuejs.org/) | UI 框架（Popup、Options 頁面） |
-| [TypeScript](https://www.typescriptlang.org/) | 型別安全 |
-| [Vite](https://vitejs.dev/) + [CRXJS](https://crxjs.dev/) | 建置工具與擴充功能熱更新 |
-| [Tailwind CSS](https://tailwindcss.com/) | 樣式 |
-| [Vitest](https://vitest.dev/) | 單元測試 |
-| Manifest V3 | Chrome 擴充功能規範 |
+| 技術                                                      | 用途                           |
+| --------------------------------------------------------- | ------------------------------ |
+| [Vue 3](https://vuejs.org/)                               | UI 框架（Popup、Options 頁面） |
+| [TypeScript](https://www.typescriptlang.org/)             | 型別安全                       |
+| [Vite](https://vitejs.dev/) + [CRXJS](https://crxjs.dev/) | 建置工具與擴充功能熱更新       |
+| [Tailwind CSS](https://tailwindcss.com/)                  | 樣式                           |
+| [Vitest](https://vitest.dev/)                             | 單元測試                       |
+| Manifest V3                                               | Chrome 擴充功能規範            |
 
 ## 專案結構
 
@@ -75,8 +75,8 @@ src/
 
 透過擴充功能設定頁面可調整以下選項：
 
-| 設定 | 預設值 | 說明 |
-|------|--------|------|
-| AnkiConnect URL | `http://localhost:8765` | AnkiConnect 服務位址 |
-| 預設牌組 | `Default` | 新卡片加入的牌組 |
-| 預設標籤 | （無） | 每張卡片自動套用的標籤 |
+| 設定            | 預設值                  | 說明                   |
+| --------------- | ----------------------- | ---------------------- |
+| AnkiConnect URL | `http://localhost:8765` | AnkiConnect 服務位址   |
+| 預設牌組        | `Default`               | 新卡片加入的牌組       |
+| 預設標籤        | （無）                  | 每張卡片自動套用的標籤 |
