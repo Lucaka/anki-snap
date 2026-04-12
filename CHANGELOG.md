@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.1...anki-snap-v1.1.2) (2026-04-12)
+
+
+### 🛠 Code Refactoring
+
+* action 更新至 npm 11 ([e186e2f](https://github.com/Lucaka/anki-snap/commit/e186e2f769dd69e3a959f531a6097cf9955ec29f))
+
 ## [1.1.1](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.0...anki-snap-v1.1.1) (2026-04-12)
 
 
