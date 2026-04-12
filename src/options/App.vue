@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, toRaw } from 'vue'
 import { DEFAULT_SETTINGS, type Settings } from '@/shared/types'
 
 const settings = ref<Settings>({ ...DEFAULT_SETTINGS })
@@ -32,7 +32,7 @@ onMounted(async () => {
 })
 
 async function save() {
-  await chrome.storage.sync.set(settings.value)
+  await chrome.storage.sync.set(toRaw(settings.value))
   saved.value = true
   setTimeout(() => (saved.value = false), 2000)
 }
