@@ -20,3 +20,4 @@ jobs:
         id: release
         with:
           release-type: node
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
