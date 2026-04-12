@@ -17,6 +17,5 @@
     { "type": "perf", "section": "⚡ Performance Improvements" },
     { "type": "deps", "section": "📦 Dependency Updates" },
     { "type": "chore", "section": "🔧 Maintenance" }
-  ],
-  "monorepo-tags": true
+  ]
 }
