@@ -25,6 +25,7 @@ export type MessageType =
   | "GET_SETTINGS"
   | "SET_SETTINGS"
   | "GENERATE_CARDS"
+  | "ADD_NOTE"
   | "SHOW_SNAP_PANEL"
   | "OPEN_OPTIONS";
 

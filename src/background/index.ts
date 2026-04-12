@@ -21,6 +21,23 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 });
 
 chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
+  if (message.type === "ADD_NOTE") {
+    const { url, body } = message.payload as { url: string; body: object };
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+      .then(async (resp) => {
+        if (!resp.ok) throw new Error(`AnkiConnect HTTP ${resp.status}`);
+        const data = (await resp.json()) as { error: string | null };
+        if (data.error) throw new Error(data.error);
+        sendResponse({ ok: true });
+      })
+      .catch((err: Error) => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
+
   if (message.type === "GENERATE_CARDS") {
     const { text, settings } = message.payload as { text: string; settings: Settings };
     handleGenerateCards(text, settings)

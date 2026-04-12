@@ -254,15 +254,12 @@ async function addNoteToAnki(card: AnkiCardData): Promise<void> {
     },
   };
 
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const resp = (await chrome.runtime.sendMessage({
+    type: "ADD_NOTE",
+    payload: { url, body },
+  })) as { ok: boolean; error?: string };
 
-  if (!resp.ok) throw new Error(`AnkiConnect HTTP ${resp.status}`);
-  const data = (await resp.json()) as { error: string | null };
-  if (data.error) throw new Error(data.error);
+  if (!resp?.ok) throw new Error(resp?.error ?? "AnkiConnect 失敗");
 }
 
 // ==================== OpenAI via background ====================
