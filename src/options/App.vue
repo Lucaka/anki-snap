@@ -187,7 +187,7 @@ async function save() {
             v-model="settings.defaultDeck"
             type="text"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Default"
+            placeholder="預設"
           />
         </div>
 
@@ -208,6 +208,37 @@ async function save() {
                 .filter(Boolean)
             "
           />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">筆記類型（modelName）</label>
+          <input
+            v-model="settings.ankiModelName"
+            type="text"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="基本型"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">正面欄位名稱</label>
+            <input
+              v-model="settings.ankiFrontField"
+              type="text"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="正面"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">背面欄位名稱</label>
+            <input
+              v-model="settings.ankiBackField"
+              type="text"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="背面"
+            />
+          </div>
         </div>
       </div>
 

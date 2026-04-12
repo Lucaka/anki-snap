@@ -11,6 +11,6 @@ describe("DEFAULT_SETTINGS", () => {
   });
 
   it("has a default deck name", () => {
-    expect(DEFAULT_SETTINGS.defaultDeck).toBe("Default");
+    expect(DEFAULT_SETTINGS.defaultDeck).toBe("預設");
   });
 });

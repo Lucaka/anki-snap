@@ -39,6 +39,9 @@ export interface Settings {
   ankiConnectUrl: string;
   defaultDeck: string;
   defaultTags: string[];
+  ankiModelName: string;
+  ankiFrontField: string;
+  ankiBackField: string;
   aiProvider: AiProvider;
   openaiApiKey: string;
   showFloatingIcon: boolean;
@@ -50,8 +53,11 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   ankiConnectUrl: "http://localhost:8765",
-  defaultDeck: "Default",
+  defaultDeck: "預設",
   defaultTags: [],
+  ankiModelName: "基本型",
+  ankiFrontField: "正面",
+  ankiBackField: "背面",
   aiProvider: "openai",
   openaiApiKey: "",
   showFloatingIcon: true,

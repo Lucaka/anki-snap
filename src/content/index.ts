@@ -36,7 +36,8 @@ async function init() {
 
   chrome.storage.onChanged.addListener((changes) => {
     for (const [k, { newValue }] of Object.entries(changes)) {
-      if (k in settings) (settings as unknown as Record<string, unknown>)[k] = newValue;
+      if (k in settings)
+        (settings as unknown as Record<string, unknown>)[k] = newValue;
     }
   });
 }
@@ -185,14 +186,83 @@ function showCards(cards: AnkiCardData[]) {
 
   const footer = panelEl?.querySelector<HTMLElement>(".as-footer");
   if (footer) footer.style.display = "flex";
+  panelEl?.querySelector(".as-add-btn")?.addEventListener("click", onAddClick);
   updateFooter();
 }
 
 function updateFooter() {
   const count = panelEl?.querySelector(".as-count");
-  if (count) count.textContent = `已選 ${selectedIndices.size} / ${currentCards.length} 張`;
+  if (count)
+    count.textContent = `已選 ${selectedIndices.size} / ${currentCards.length} 張`;
   const btn = panelEl?.querySelector<HTMLButtonElement>(".as-add-btn");
   if (btn) btn.disabled = selectedIndices.size === 0;
+}
+
+// ==================== Add to Anki ====================
+
+async function onAddClick() {
+  const btn = panelEl?.querySelector<HTMLButtonElement>(".as-add-btn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "送出中...";
+  }
+
+  const selected = currentCards.filter((_, i) => selectedIndices.has(i));
+  const results = await Promise.allSettled(
+    selected.map((card) => addNoteToAnki(card)),
+  );
+
+  const failed = results.filter((r) => r.status === "rejected").length;
+  if (failed === 0) {
+    if (btn) {
+      btn.textContent = `已加入 ${selected.length} 張`;
+      btn.style.background = "#16a34a";
+    }
+    setTimeout(() => closeAll(), 1200);
+  } else {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = `${failed} 張失敗，請重試`;
+      btn.style.background = "#dc2626";
+    }
+  }
+}
+
+async function addNoteToAnki(card: AnkiCardData): Promise<void> {
+  const url = settings.ankiConnectUrl || "http://localhost:8765";
+  const modelName = settings.ankiModelName || "基本型";
+  const frontField = settings.ankiFrontField || "正面";
+  const backField = settings.ankiBackField || "背面";
+
+  const backContent = [card.back, card.example, card.related]
+    .filter(Boolean)
+    .join("<br>");
+
+  const body = {
+    action: "addNote",
+    version: 6,
+    params: {
+      note: {
+        deckName: settings.defaultDeck || "預設",
+        modelName,
+        fields: {
+          [frontField]: card.front,
+          [backField]: backContent,
+        },
+        tags: settings.defaultTags ?? [],
+      },
+    },
+  };
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) throw new Error(`AnkiConnect HTTP ${resp.status}`);
+  const data = (await resp.json()) as { error: string | null };
+  if (data.error) throw new Error(data.error);
 }
 
 // ==================== OpenAI via background ====================
@@ -202,7 +272,12 @@ async function fetchCards(text: string) {
     const resp = (await chrome.runtime.sendMessage({
       type: "GENERATE_CARDS",
       payload: { text, settings },
-    })) as { ok: boolean; cards?: AnkiCardData[]; error?: string; status?: number };
+    })) as {
+      ok: boolean;
+      cards?: AnkiCardData[];
+      error?: string;
+      status?: number;
+    };
 
     if (!resp?.ok) {
       showError(resp?.error ?? "生成失敗，請稍後再試", resp?.status === 401);
@@ -225,26 +300,31 @@ function closeAll() {
 function handleDocumentMouseDown(e: MouseEvent) {
   if (!panelEl) return;
   const path = e.composedPath();
-  if (!path.includes(panelEl as EventTarget) && !path.includes(iconEl as EventTarget)) {
+  if (
+    !path.includes(panelEl as EventTarget) &&
+    !path.includes(iconEl as EventTarget)
+  ) {
     closeAll();
   }
 }
 
 // ==================== Message listener (context menu / popup) ====================
 
-chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
-  if (message.type === "SHOW_SNAP_PANEL") {
-    const text =
-      (message.payload as { text?: string } | undefined)?.text ||
-      window.getSelection()?.toString().trim() ||
-      "";
-    if (text) openPanel(text);
+chrome.runtime.onMessage.addListener(
+  (message: Message, _sender, sendResponse) => {
+    if (message.type === "SHOW_SNAP_PANEL") {
+      const text =
+        (message.payload as { text?: string } | undefined)?.text ||
+        window.getSelection()?.toString().trim() ||
+        "";
+      if (text) openPanel(text);
+      sendResponse({ ok: true });
+      return true;
+    }
     sendResponse({ ok: true });
     return true;
-  }
-  sendResponse({ ok: true });
-  return true;
-});
+  },
+);
 
 // ==================== Utils ====================
 
@@ -272,7 +352,7 @@ const PANEL_SHELL = `
 <div class="as-body"></div>
 <div class="as-footer" style="display:none">
   <span class="as-count"></span>
-  <button class="as-add-btn" disabled>加入 Anki（即將支援）</button>
+  <button class="as-add-btn" disabled>加入 Anki</button>
 </div>`;
 
 const STYLES = `
