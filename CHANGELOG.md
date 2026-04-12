@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.1](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.0...anki-snap-v1.1.1) (2026-04-12)
+
+
+### 🐛 Bug Fixes
+
+* 移除 monorepo-tags ([da05fba](https://github.com/Lucaka/anki-snap/commit/da05fba37d386b85fea2bd6ed44a23e69ebeac0b))
+
+
+### 🛠 Code Refactoring
+
+* 調整 release-please 格式 ([634601b](https://github.com/Lucaka/anki-snap/commit/634601b9852da84e5e2cb2a489a422bc3b44ea78))
+
+
+### 🔧 Maintenance
+
+* **main:** release 1.1.1 ([7389640](https://github.com/Lucaka/anki-snap/commit/7389640e24750a4a41b78f2c923a2b0374f49f37))
+* **main:** release 1.1.1 ([e1c793e](https://github.com/Lucaka/anki-snap/commit/e1c793edd55a1b86c4f7d1c02f7261598f3b88dd))
+* 更新 package-lock ([62489a3](https://github.com/Lucaka/anki-snap/commit/62489a3fd3a251c152405fc980b2510d8951257d))
+* 移除 release-type: node ([3afa755](https://github.com/Lucaka/anki-snap/commit/3afa75591d276b6e570e81548368a100eddc8198))
+
 ## [1.1.1](https://github.com/Lucaka/anki-snap/compare/v1.1.0...v1.1.1) (2026-04-12)
 
 
