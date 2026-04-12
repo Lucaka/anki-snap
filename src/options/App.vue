@@ -5,9 +5,14 @@ import { DEFAULT_SETTINGS, type Settings } from '@/shared/types'
 const settings = ref<Settings>({ ...DEFAULT_SETTINGS })
 const saved = ref(false)
 
-const MODEL_OPTIONS = [
+const OPENAI_MODEL_OPTIONS = [
   { value: 'gpt-4o-mini', label: 'GPT-4o Mini（快速、低費用）' },
   { value: 'gpt-4o', label: 'GPT-4o（高品質）' },
+]
+
+const GEMINI_MODEL_OPTIONS = [
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash（快速、低費用）' },
+  { value: 'gemini-2.5-pro-preview-03-25', label: 'Gemini 2.5 Pro（高品質）' },
 ]
 
 const LANGUAGE_OPTIONS = [
@@ -39,37 +44,75 @@ async function save() {
 
     <form class="space-y-6" @submit.prevent="save">
 
-      <!-- OpenAI Section -->
+      <!-- AI Provider Section -->
       <div class="border border-gray-200 rounded-lg p-5 space-y-4">
-        <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">OpenAI</h2>
+        <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">AI 服務</h2>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            API Key
-          </label>
-          <input
-            v-model="settings.openaiApiKey"
-            type="password"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-            placeholder="sk-..."
-            autocomplete="off"
-          />
-          <p class="mt-1 text-xs text-gray-400">從 platform.openai.com 取得，存於本機瀏覽器，不會上傳。</p>
+          <label class="block text-sm font-medium text-gray-700 mb-1">服務提供者</label>
+          <div class="flex gap-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="settings.aiProvider" type="radio" value="openai" class="accent-blue-600" />
+              <span class="text-sm text-gray-700">OpenAI</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="settings.aiProvider" type="radio" value="gemini" class="accent-blue-600" />
+              <span class="text-sm text-gray-700">Google Gemini</span>
+            </label>
+          </div>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            模型
-          </label>
-          <select
-            v-model="settings.openaiModel"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
-            <option v-for="opt in MODEL_OPTIONS" :key="opt.value" :value="opt.value">
-              {{ opt.label }}
-            </option>
-          </select>
-        </div>
+        <!-- OpenAI fields -->
+        <template v-if="settings.aiProvider === 'openai'">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+            <input
+              v-model="settings.openaiApiKey"
+              type="password"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+              placeholder="sk-..."
+              autocomplete="off"
+            />
+            <p class="mt-1 text-xs text-gray-400">從 platform.openai.com 取得，存於本機瀏覽器，不會上傳。</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">模型</label>
+            <select
+              v-model="settings.openaiModel"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option v-for="opt in OPENAI_MODEL_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+        </template>
+
+        <!-- Gemini fields -->
+        <template v-if="settings.aiProvider === 'gemini'">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+            <input
+              v-model="settings.geminiApiKey"
+              type="password"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+              placeholder="AIza..."
+              autocomplete="off"
+            />
+            <p class="mt-1 text-xs text-gray-400">從 aistudio.google.com 取得，存於本機瀏覽器，不會上傳。</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">模型</label>
+            <select
+              v-model="settings.geminiModel"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option v-for="opt in GEMINI_MODEL_OPTIONS" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+        </template>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -145,7 +188,7 @@ async function save() {
             <span class="text-gray-400 font-normal">（以逗號分隔）</span>
           </label>
           <input
-            :value="settings.defaultTags.join(', ')"
+            :value="settings.defaultTags?.join(', ')"
             type="text"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="language, vocab"

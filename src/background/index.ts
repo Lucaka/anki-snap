@@ -41,14 +41,8 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
   return true
 })
 
-async function handleGenerateCards(text: string, settings: Settings): Promise<AnkiCardData[]> {
-  if (!settings.openaiApiKey) {
-    const err = Object.assign(new Error('未設定 OpenAI API Key，請前往設定頁面'), { status: 401 })
-    throw err
-  }
-
-  const lang = settings.targetLanguage || '繁體中文'
-  const systemPrompt = `你是一個 Anki 單字卡片生成器。根據用戶輸入的文字，生成單字學習卡片。
+function buildSystemPrompt(lang: string): string {
+  return `你是一個 Anki 單字卡片生成器。根據用戶輸入的文字，生成單字學習卡片。
 
 規則：
 - 若輸入是單一單字或短片語：生成一張卡片
@@ -61,6 +55,30 @@ async function handleGenerateCards(text: string, settings: Settings): Promise<An
 - related：相關字形（例如：resistant（形容詞）），若無則為空字串
 
 只回傳 JSON 陣列，不要 markdown code block，不要任何說明文字。`
+}
+
+function parseCards(content: string): AnkiCardData[] {
+  try {
+    return JSON.parse(content) as AnkiCardData[]
+  } catch {
+    throw Object.assign(new Error('無法解析 API 回應，請重試'), { status: 500 })
+  }
+}
+
+async function handleGenerateCards(text: string, settings: Settings): Promise<AnkiCardData[]> {
+  const lang = settings.targetLanguage || '繁體中文'
+  const systemPrompt = buildSystemPrompt(lang)
+
+  if (settings.aiProvider === 'gemini') {
+    return generateWithGemini(text, systemPrompt, settings)
+  }
+  return generateWithOpenAI(text, systemPrompt, settings)
+}
+
+async function generateWithOpenAI(text: string, systemPrompt: string, settings: Settings): Promise<AnkiCardData[]> {
+  if (!settings.openaiApiKey) {
+    throw Object.assign(new Error('未設定 OpenAI API Key，請前往設定頁面'), { status: 401 })
+  }
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -86,11 +104,34 @@ async function handleGenerateCards(text: string, settings: Settings): Promise<An
   const data = (await response.json()) as {
     choices: Array<{ message: { content: string } }>
   }
-  const content = data.choices[0]?.message?.content ?? '[]'
+  return parseCards(data.choices[0]?.message?.content ?? '[]')
+}
 
-  try {
-    return JSON.parse(content) as AnkiCardData[]
-  } catch {
-    throw Object.assign(new Error('無法解析 API 回應，請重試'), { status: 500 })
+async function generateWithGemini(text: string, systemPrompt: string, settings: Settings): Promise<AnkiCardData[]> {
+  if (!settings.geminiApiKey) {
+    throw Object.assign(new Error('未設定 Gemini API Key，請前往設定頁面'), { status: 401 })
   }
+
+  const model = settings.geminiModel || 'gemini-2.5-flash'
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.geminiApiKey}`
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text }] }],
+      generationConfig: { temperature: 0.3 },
+    }),
+  })
+
+  if (!response.ok) {
+    const msg = response.status === 400 ? '無效的 Gemini API Key，請至設定頁面更新' : `Gemini API 錯誤（${response.status}）`
+    throw Object.assign(new Error(msg), { status: response.status })
+  }
+
+  const data = (await response.json()) as {
+    candidates: Array<{ content: { parts: Array<{ text: string }> } }>
+  }
+  return parseCards(data.candidates[0]?.content?.parts[0]?.text ?? '[]')
 }

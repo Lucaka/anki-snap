@@ -33,22 +33,30 @@ export interface Message<T = unknown> {
   payload?: T
 }
 
+export type AiProvider = 'openai' | 'gemini'
+
 export interface Settings {
   ankiConnectUrl: string
   defaultDeck: string
   defaultTags: string[]
+  aiProvider: AiProvider
   openaiApiKey: string
   showFloatingIcon: boolean
   targetLanguage: string
   openaiModel: string
+  geminiApiKey: string
+  geminiModel: string
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   ankiConnectUrl: 'http://localhost:8765',
   defaultDeck: 'Default',
   defaultTags: [],
+  aiProvider: 'openai',
   openaiApiKey: '',
   showFloatingIcon: true,
   targetLanguage: '繁體中文',
   openaiModel: 'gpt-4o-mini',
+  geminiApiKey: '',
+  geminiModel: 'gemini-2.5-flash',
 }
