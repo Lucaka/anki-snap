@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Lucaka/anki-snap/compare/v1.0.0...v1.1.0) (2026-04-12)
+
+
+### Features
+
+* 更新 icon ([6c49a6e](https://github.com/Lucaka/anki-snap/commit/6c49a6e4ff0fb412d35199d24076a62031aad6eb))
+
 ## 1.0.0 (2026-04-12)
 
 
