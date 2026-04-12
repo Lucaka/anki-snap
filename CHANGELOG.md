@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.4...anki-snap-v1.1.5) (2026-04-12)
+
+
+### 🐛 Bug Fixes
+
+* 修正 background 無法正常執行的問題 ([7abea45](https://github.com/Lucaka/anki-snap/commit/7abea45aa404ce15f4932c86d83d9928fe44fa79))
+
 ## [1.1.4](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.3...anki-snap-v1.1.4) (2026-04-12)
 
 
