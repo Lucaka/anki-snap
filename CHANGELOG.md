@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.3...anki-snap-v1.1.4) (2026-04-12)
+
+
+### 🛠 Code Refactoring
+
+* 更新 package-lock ([2cec091](https://github.com/Lucaka/anki-snap/commit/2cec09110d30cd4d1cce55d80a024743eea1ad1a))
+
 ## [1.1.3](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.2...anki-snap-v1.1.3) (2026-04-12)
 
 
