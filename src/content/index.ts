@@ -96,6 +96,7 @@ function onIconClick() {
 // ==================== Panel ====================
 
 function openPanel(text: string) {
+  console.log("openPanel");
   if (!shadowRoot) return;
   pendingText = text;
   currentCards = [];
@@ -118,7 +119,6 @@ function openPanel(text: string) {
   panelEl.innerHTML = PANEL_SHELL;
   panelEl.querySelector(".as-close")!.addEventListener("click", closeAll);
   shadowRoot.appendChild(panelEl);
-
   showLoading();
   fetchCards(text);
 }
@@ -276,6 +276,8 @@ async function fetchCards(text: string) {
       status?: number;
     };
 
+    console.log("fetchCards", resp);
+
     if (!resp?.ok) {
       showError(resp?.error ?? "生成失敗，請稍後再試", resp?.status === 401);
       return;
@@ -423,7 +425,9 @@ const STYLES = `
 }
 
 .as-body {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 80px;
+  max-height: 400px;
   overflow-y: auto;
   padding: 10px;
 }
@@ -543,4 +547,6 @@ const STYLES = `
 `;
 
 // ==================== Start ====================
-init();
+if (typeof document !== "undefined") {
+  init();
+}

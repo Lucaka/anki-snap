@@ -20,43 +20,52 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   });
 });
 
-chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
-  if (message.type === "ADD_NOTE") {
-    const { url, body } = message.payload as { url: string; body: object };
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-      .then(async (resp) => {
-        if (!resp.ok) throw new Error(`AnkiConnect HTTP ${resp.status}`);
-        const data = (await resp.json()) as { error: string | null };
-        if (data.error) throw new Error(data.error);
-        sendResponse({ ok: true });
+console.log("bg init");
+
+chrome.runtime.onMessage.addListener(
+  (message: Message, _sender, sendResponse) => {
+    console.log({ message, _sender });
+
+    if (message.type === "ADD_NOTE") {
+      const { url, body } = message.payload as { url: string; body: object };
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       })
-      .catch((err: Error) => sendResponse({ ok: false, error: err.message }));
-    return true;
-  }
+        .then(async (resp) => {
+          if (!resp.ok) throw new Error(`AnkiConnect HTTP ${resp.status}`);
+          const data = (await resp.json()) as { error: string | null };
+          if (data.error) throw new Error(data.error);
+          sendResponse({ ok: true });
+        })
+        .catch((err: Error) => sendResponse({ ok: false, error: err.message }));
+      return true;
+    }
 
-  if (message.type === "GENERATE_CARDS") {
-    const { text, settings } = message.payload as { text: string; settings: Settings };
-    handleGenerateCards(text, settings)
-      .then((cards) => sendResponse({ ok: true, cards }))
-      .catch((err: Error & { status?: number }) =>
-        sendResponse({ ok: false, error: err.message, status: err.status }),
-      );
-    return true; // keep channel open for async response
-  }
+    if (message.type === "GENERATE_CARDS") {
+      const { text, settings } = message.payload as {
+        text: string;
+        settings: Settings;
+      };
+      handleGenerateCards(text, settings)
+        .then((cards) => sendResponse({ ok: true, cards }))
+        .catch((err: Error & { status?: number }) =>
+          sendResponse({ ok: false, error: err.message, status: err.status }),
+        );
+      return true; // keep channel open for async response
+    }
 
-  if (message.type === "OPEN_OPTIONS") {
-    chrome.runtime.openOptionsPage();
+    if (message.type === "OPEN_OPTIONS") {
+      chrome.runtime.openOptionsPage();
+      sendResponse({ ok: true });
+      return true;
+    }
+
     sendResponse({ ok: true });
     return true;
-  }
-
-  sendResponse({ ok: true });
-  return true;
-});
+  },
+);
 
 function buildSystemPrompt(lang: string): string {
   return `你是一個 Anki 單字卡片生成器。根據用戶輸入的文字，生成單字學習卡片。
@@ -78,13 +87,19 @@ function parseCards(content: string): AnkiCardData[] {
   try {
     return JSON.parse(content) as AnkiCardData[];
   } catch {
-    throw Object.assign(new Error("無法解析 API 回應，請重試"), { status: 500 });
+    throw Object.assign(new Error("無法解析 API 回應，請重試"), {
+      status: 500,
+    });
   }
 }
 
-async function handleGenerateCards(text: string, settings: Settings): Promise<AnkiCardData[]> {
+async function handleGenerateCards(
+  text: string,
+  settings: Settings,
+): Promise<AnkiCardData[]> {
   const lang = settings.targetLanguage || "繁體中文";
   const systemPrompt = buildSystemPrompt(lang);
+  console.log("handleGenerateCards");
 
   if (settings.aiProvider === "gemini") {
     return generateWithGemini(text, systemPrompt, settings);
@@ -98,7 +113,9 @@ async function generateWithOpenAI(
   settings: Settings,
 ): Promise<AnkiCardData[]> {
   if (!settings.openaiApiKey) {
-    throw Object.assign(new Error("未設定 OpenAI API Key，請前往設定頁面"), { status: 401 });
+    throw Object.assign(new Error("未設定 OpenAI API Key，請前往設定頁面"), {
+      status: 401,
+    });
   }
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -137,7 +154,9 @@ async function generateWithGemini(
   settings: Settings,
 ): Promise<AnkiCardData[]> {
   if (!settings.geminiApiKey) {
-    throw Object.assign(new Error("未設定 Gemini API Key，請前往設定頁面"), { status: 401 });
+    throw Object.assign(new Error("未設定 Gemini API Key，請前往設定頁面"), {
+      status: 401,
+    });
   }
 
   const model = settings.geminiModel || "gemini-2.5-flash";
@@ -164,5 +183,6 @@ async function generateWithGemini(
   const data = (await response.json()) as {
     candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
   };
+  console.log("generateWithGemini", response);
   return parseCards(data.candidates[0]?.content?.parts[0]?.text ?? "[]");
 }
