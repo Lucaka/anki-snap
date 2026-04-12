@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.2...anki-snap-v1.1.3) (2026-04-12)
+
+
+### 🛠 Code Refactoring
+
+* 調整 npm 版本 ([e5faaa5](https://github.com/Lucaka/anki-snap/commit/e5faaa5683a83eb3937ca7b94a72284a9122bfc7))
+
 ## [1.1.2](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.1...anki-snap-v1.1.2) (2026-04-12)
 
 
