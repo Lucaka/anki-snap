@@ -13,6 +13,8 @@ const OPENAI_MODEL_OPTIONS = [
 const GEMINI_MODEL_OPTIONS = [
   { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash（快速、低費用）" },
   { value: "gemini-2.5-pro-preview-03-25", label: "Gemini 2.5 Pro（高品質）" },
+  { value: "gemma-4-26b-a4b-it", label: "Gemma 4 26B" },
+  { value: "gemma-4-31b-it", label: "Gemma 4 31B" },
 ];
 
 const LANGUAGE_OPTIONS = [
