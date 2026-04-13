@@ -17,6 +17,7 @@
     "fmt:check": "vp fmt . --check"
   },
   "dependencies": {
+    "@google/genai": "^1.49.0",
     "vue": "^3.4.0"
   },
   "devDependencies": {

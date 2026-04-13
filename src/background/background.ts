@@ -1,3 +1,4 @@
+import { GoogleGenAI } from "@google/genai";
 import type { AnkiCardData, Message, Settings } from "@/shared/types";
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -159,30 +160,18 @@ async function generateWithGemini(
     });
   }
 
+  const ai = new GoogleGenAI({ apiKey: settings.geminiApiKey });
   const model = settings.geminiModel || "gemini-2.5-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.geminiApiKey}`;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: "user", parts: [{ text }] }],
-      generationConfig: { temperature: 0.3 },
-    }),
+  const response = await ai.models.generateContent({
+    model,
+    config: {
+      systemInstruction: systemPrompt,
+      temperature: 0.3,
+    },
+    contents: text,
   });
 
-  if (!response.ok) {
-    const msg =
-      response.status === 400
-        ? "無效的 Gemini API Key，請至設定頁面更新"
-        : `Gemini API 錯誤（${response.status}）`;
-    throw Object.assign(new Error(msg), { status: response.status });
-  }
-
-  const data = (await response.json()) as {
-    candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
-  };
   console.log("generateWithGemini", response);
-  return parseCards(data.candidates[0]?.content?.parts[0]?.text ?? "[]");
+  return parseCards(response.text ?? "[]");
 }
