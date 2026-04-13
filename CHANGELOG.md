@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.5...anki-snap-v1.2.0) (2026-04-13)
+
+
+### ✨ New Features
+
+* [Gemini] - 新增 Gemma 4 ([#10](https://github.com/Lucaka/anki-snap/issues/10)) ([62f71fb](https://github.com/Lucaka/anki-snap/commit/62f71fbdbf20f75d23e39c8569d20754dc49defb))
+* [Gemini] - 新增 Gemma 4 ([#10](https://github.com/Lucaka/anki-snap/issues/10)) ([d1a24d6](https://github.com/Lucaka/anki-snap/commit/d1a24d6b7eb75c140140b0f13f39f85a5933bee1))
+
 ## [1.1.5](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.4...anki-snap-v1.1.5) (2026-04-12)
 
 
