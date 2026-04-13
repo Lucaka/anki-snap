@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.2.0...anki-snap-v1.2.1) (2026-04-13)
+
+
+### 🛠 Code Refactoring
+
+* [Gemini] 改用 @google/genai SDK 取代手動 fetch ([055512f](https://github.com/Lucaka/anki-snap/commit/055512f969313eeb40f7fd1c1becddee4fa5b96a))
+
 ## [1.2.0](https://github.com/Lucaka/anki-snap/compare/anki-snap-v1.1.5...anki-snap-v1.2.0) (2026-04-13)
 
 
