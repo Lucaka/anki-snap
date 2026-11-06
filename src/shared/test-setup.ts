@@ -14,10 +14,12 @@ globalThis.chrome = {
     sync: {
       get: vi.fn(),
       set: vi.fn(),
+      remove: vi.fn(),
     },
     local: {
       get: vi.fn(),
       set: vi.fn(),
+      remove: vi.fn(),
     },
   },
   tabs: {

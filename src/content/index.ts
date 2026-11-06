@@ -1,9 +1,10 @@
-import type { AnkiCardData, Message, Settings } from "@/shared/types";
+import type { NoteAddResult } from "@/shared/anki";
+import type { AnkiCardData, Message } from "@/shared/types";
 import { DEFAULT_SETTINGS } from "@/shared/types";
 
 // ==================== State ====================
 
-let settings: Settings = { ...DEFAULT_SETTINGS };
+let showFloatingIcon = DEFAULT_SETTINGS.showFloatingIcon;
 let shadowRoot: ShadowRoot | null = null;
 let iconEl: HTMLElement | null = null;
 let panelEl: HTMLElement | null = null;
@@ -15,8 +16,10 @@ let selectedIndices = new Set<number>();
 // ==================== Bootstrap ====================
 
 async function init() {
-  const stored = await chrome.storage.sync.get(Object.keys(DEFAULT_SETTINGS));
-  settings = { ...DEFAULT_SETTINGS, ...(stored as Partial<Settings>) };
+  const stored = await chrome.storage.sync.get("showFloatingIcon");
+  if (typeof stored.showFloatingIcon === "boolean") {
+    showFloatingIcon = stored.showFloatingIcon;
+  }
 
   const host = document.createElement("div");
   host.style.cssText =
@@ -34,10 +37,9 @@ async function init() {
   });
   document.addEventListener("mousedown", handleDocumentMouseDown);
 
-  chrome.storage.onChanged.addListener((changes) => {
-    for (const [k, { newValue }] of Object.entries(changes)) {
-      if (k in settings)
-        (settings as unknown as Record<string, unknown>)[k] = newValue;
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "sync" && typeof changes.showFloatingIcon?.newValue === "boolean") {
+      showFloatingIcon = changes.showFloatingIcon.newValue;
     }
   });
 }
@@ -48,7 +50,7 @@ function handleMouseUp() {
   if (selectionTimer) clearTimeout(selectionTimer);
   selectionTimer = setTimeout(() => {
     const text = window.getSelection()?.toString().trim() ?? "";
-    if (text && settings.showFloatingIcon) {
+    if (text && showFloatingIcon) {
       pendingText = text;
       placeIcon();
     } else if (!text) {
@@ -96,7 +98,6 @@ function onIconClick() {
 // ==================== Panel ====================
 
 function openPanel(text: string) {
-  console.log("openPanel");
   if (!shadowRoot) return;
   pendingText = text;
   currentCards = [];
@@ -192,74 +193,105 @@ function showCards(cards: AnkiCardData[]) {
 
 function updateFooter() {
   const count = panelEl?.querySelector(".as-count");
-  if (count)
-    count.textContent = `已選 ${selectedIndices.size} / ${currentCards.length} 張`;
+  if (count) count.textContent = `已選 ${selectedIndices.size} / ${currentCards.length} 張`;
   const btn = panelEl?.querySelector<HTMLButtonElement>(".as-add-btn");
   if (btn) btn.disabled = selectedIndices.size === 0;
+}
+
+function setAnkiMessage(text: string) {
+  const el = panelEl?.querySelector<HTMLElement>(".as-anki-msg");
+  if (!el) return;
+  if (!text) {
+    el.style.display = "none";
+    el.textContent = "";
+    return;
+  }
+  el.style.display = "block";
+  el.textContent = text;
+}
+
+function syncCardChecks() {
+  panelEl?.querySelectorAll<HTMLInputElement>(".as-cb").forEach((box) => {
+    const index = Number(box.dataset.i);
+    box.checked = selectedIndices.has(index);
+  });
+  updateFooter();
 }
 
 // ==================== Add to Anki ====================
 
 async function onAddClick() {
   const btn = panelEl?.querySelector<HTMLButtonElement>(".as-add-btn");
+  const indices = [...selectedIndices].sort((a, b) => a - b);
+  if (indices.length === 0) return;
   if (btn) {
     btn.disabled = true;
     btn.textContent = "送出中...";
+    btn.style.background = "";
   }
+  setAnkiMessage("");
 
-  const selected = currentCards.filter((_, i) => selectedIndices.has(i));
-  const results = await Promise.allSettled(
-    selected.map((card) => addNoteToAnki(card)),
-  );
-
-  const failed = results.filter((r) => r.status === "rejected").length;
-  if (failed === 0) {
-    if (btn) {
-      btn.textContent = `已加入 ${selected.length} 張`;
-      btn.style.background = "#16a34a";
-    }
-    setTimeout(() => closeAll(), 1200);
-  } else {
+  const cards = indices.map((index) => currentCards[index]);
+  let resp: { ok: boolean; error?: string; results?: NoteAddResult[] } | undefined;
+  try {
+    resp = (await chrome.runtime.sendMessage({
+      type: "ADD_NOTES",
+      payload: { cards },
+    })) as { ok: boolean; error?: string; results?: NoteAddResult[] };
+  } catch {
+    setAnkiMessage("連線失敗，請稍後再試");
     if (btn) {
       btn.disabled = false;
-      btn.textContent = `${failed} 張失敗，請重試`;
+      btn.textContent = "加入 Anki";
+    }
+    return;
+  }
+
+  if (!resp?.results) {
+    setAnkiMessage(resp?.error ?? "AnkiConnect 失敗");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = `${indices.length} 張失敗，請重試`;
       btn.style.background = "#dc2626";
     }
+    return;
   }
-}
 
-async function addNoteToAnki(card: AnkiCardData): Promise<void> {
-  const url = settings.ankiConnectUrl || "http://localhost:8765";
-  const modelName = settings.ankiModelName || "基本型";
-  const frontField = settings.ankiFrontField || "正面";
-  const backField = settings.ankiBackField || "背面";
+  const reasons: string[] = [];
+  let added = 0;
+  let audioSkipped = 0;
+  resp.results.forEach((result, offset) => {
+    const index = indices[offset];
+    if (result?.ok) {
+      added += 1;
+      if (result.audioSkipped) audioSkipped += 1;
+      selectedIndices.delete(index);
+      return;
+    }
+    const reason = result?.error || "AnkiConnect 失敗";
+    if (!reasons.includes(reason)) reasons.push(reason);
+  });
+  syncCardChecks();
 
-  const backContent = [card.back, card.example, card.related]
-    .filter(Boolean)
-    .join("<br>");
+  const skippedText = audioSkipped > 0 ? `其中 ${audioSkipped} 張略過發音（語音合成失敗）。` : "";
 
-  const body = {
-    action: "addNote",
-    version: 6,
-    params: {
-      note: {
-        deckName: settings.defaultDeck || "預設",
-        modelName,
-        fields: {
-          [frontField]: card.front,
-          [backField]: backContent,
-        },
-        tags: settings.defaultTags ?? [],
-      },
-    },
-  };
+  if (selectedIndices.size === 0) {
+    if (btn) {
+      btn.textContent = `已加入 ${added} 張`;
+      btn.style.background = "#16a34a";
+    }
+    setAnkiMessage(skippedText);
+    setTimeout(() => closeAll(), skippedText ? 2500 : 1200);
+    return;
+  }
 
-  const resp = (await chrome.runtime.sendMessage({
-    type: "ADD_NOTE",
-    payload: { url, body },
-  })) as { ok: boolean; error?: string };
-
-  if (!resp?.ok) throw new Error(resp?.error ?? "AnkiConnect 失敗");
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = `${selectedIndices.size} 張失敗，請重試`;
+    btn.style.background = "#dc2626";
+  }
+  const addedText = added > 0 ? `已加入 ${added} 張。` : "";
+  setAnkiMessage([addedText, skippedText, ...reasons].filter(Boolean).join("\n"));
 }
 
 // ==================== OpenAI via background ====================
@@ -268,7 +300,7 @@ async function fetchCards(text: string) {
   try {
     const resp = (await chrome.runtime.sendMessage({
       type: "GENERATE_CARDS",
-      payload: { text, settings },
+      payload: { text },
     })) as {
       ok: boolean;
       cards?: AnkiCardData[];
@@ -276,13 +308,19 @@ async function fetchCards(text: string) {
       status?: number;
     };
 
-    console.log("fetchCards", resp);
-
     if (!resp?.ok) {
       showError(resp?.error ?? "生成失敗，請稍後再試", resp?.status === 401);
       return;
     }
-    showCards(resp.cards ?? []);
+    if (!Array.isArray(resp.cards)) {
+      showError("API 回應不是卡片陣列，請重試", false);
+      return;
+    }
+    if (resp.cards.length === 0) {
+      showError("沒有產生卡片，請換一段文字再試", false);
+      return;
+    }
+    showCards(resp.cards);
   } catch {
     showError("連線失敗，請稍後再試", false);
   }
@@ -299,31 +337,26 @@ function closeAll() {
 function handleDocumentMouseDown(e: MouseEvent) {
   if (!panelEl) return;
   const path = e.composedPath();
-  if (
-    !path.includes(panelEl as EventTarget) &&
-    !path.includes(iconEl as EventTarget)
-  ) {
+  if (!path.includes(panelEl as EventTarget) && !path.includes(iconEl as EventTarget)) {
     closeAll();
   }
 }
 
 // ==================== Message listener (context menu / popup) ====================
 
-chrome.runtime.onMessage.addListener(
-  (message: Message, _sender, sendResponse) => {
-    if (message.type === "SHOW_SNAP_PANEL") {
-      const text =
-        (message.payload as { text?: string } | undefined)?.text ||
-        window.getSelection()?.toString().trim() ||
-        "";
-      if (text) openPanel(text);
-      sendResponse({ ok: true });
-      return true;
-    }
+chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
+  if (message.type === "SHOW_SNAP_PANEL") {
+    const text =
+      (message.payload as { text?: string } | undefined)?.text ||
+      window.getSelection()?.toString().trim() ||
+      "";
+    if (text) openPanel(text);
     sendResponse({ ok: true });
     return true;
-  },
-);
+  }
+  sendResponse({ ok: true });
+  return true;
+});
 
 // ==================== Utils ====================
 
@@ -349,6 +382,7 @@ const PANEL_SHELL = `
   <button class="as-close" title="關閉">✕</button>
 </div>
 <div class="as-body"></div>
+<div class="as-anki-msg" style="display:none"></div>
 <div class="as-footer" style="display:none">
   <span class="as-count"></span>
   <button class="as-add-btn" disabled>加入 Anki</button>
@@ -435,6 +469,13 @@ const STYLES = `
 .as-body::-webkit-scrollbar-track { background: transparent; }
 .as-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
 
+.as-anki-msg {
+  padding: 8px 14px 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #b45309;
+  white-space: pre-wrap;
+}
 .as-footer {
   align-items: center;
   justify-content: space-between;

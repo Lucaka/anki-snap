@@ -1,4 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
+import { addNotesWithReasons, buildAnkiNote, postAnki, resolveAnkiConnectUrl } from "@/shared/anki";
+import { parseCards } from "@/shared/parse-cards";
+import { loadSettings } from "@/shared/settings-store";
 import type { AnkiCardData, Message, Settings } from "@/shared/types";
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -21,52 +24,42 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   });
 });
 
-console.log("bg init");
-
-chrome.runtime.onMessage.addListener(
-  (message: Message, _sender, sendResponse) => {
-    console.log({ message, _sender });
-
-    if (message.type === "ADD_NOTE") {
-      const { url, body } = message.payload as { url: string; body: object };
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
-        .then(async (resp) => {
-          if (!resp.ok) throw new Error(`AnkiConnect HTTP ${resp.status}`);
-          const data = (await resp.json()) as { error: string | null };
-          if (data.error) throw new Error(data.error);
-          sendResponse({ ok: true });
-        })
-        .catch((err: Error) => sendResponse({ ok: false, error: err.message }));
+chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
+  if (message.type === "ADD_NOTES") {
+    const cards = (message.payload as { cards?: AnkiCardData[] } | undefined)?.cards;
+    if (!Array.isArray(cards)) {
+      sendResponse({ ok: false, error: "沒有可加入的卡片" });
       return true;
     }
+    addCards(cards)
+      .then((results) => sendResponse({ ok: true, results }))
+      .catch((err: Error) => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
 
-    if (message.type === "GENERATE_CARDS") {
-      const { text, settings } = message.payload as {
-        text: string;
-        settings: Settings;
-      };
-      handleGenerateCards(text, settings)
-        .then((cards) => sendResponse({ ok: true, cards }))
-        .catch((err: Error & { status?: number }) =>
-          sendResponse({ ok: false, error: err.message, status: err.status }),
-        );
-      return true; // keep channel open for async response
-    }
-
-    if (message.type === "OPEN_OPTIONS") {
-      chrome.runtime.openOptionsPage();
-      sendResponse({ ok: true });
+  if (message.type === "GENERATE_CARDS") {
+    const text = (message.payload as { text?: string } | undefined)?.text ?? "";
+    if (!text.trim()) {
+      sendResponse({ ok: false, error: "沒有選取文字" });
       return true;
     }
+    handleGenerateCards(text)
+      .then((cards) => sendResponse({ ok: true, cards }))
+      .catch((err: Error & { status?: number }) =>
+        sendResponse({ ok: false, error: err.message, status: err.status }),
+      );
+    return true;
+  }
 
+  if (message.type === "OPEN_OPTIONS") {
+    chrome.runtime.openOptionsPage();
     sendResponse({ ok: true });
     return true;
-  },
-);
+  }
+
+  sendResponse({ ok: true });
+  return true;
+});
 
 function buildSystemPrompt(lang: string): string {
   return `你是一個 Anki 單字卡片生成器。根據用戶輸入的文字，生成單字學習卡片。
@@ -84,23 +77,17 @@ function buildSystemPrompt(lang: string): string {
 只回傳 JSON 陣列，不要 markdown code block，不要任何說明文字。`;
 }
 
-function parseCards(content: string): AnkiCardData[] {
-  try {
-    return JSON.parse(content) as AnkiCardData[];
-  } catch {
-    throw Object.assign(new Error("無法解析 API 回應，請重試"), {
-      status: 500,
-    });
-  }
+async function addCards(cards: AnkiCardData[]) {
+  const settings = await loadSettings();
+  const url = resolveAnkiConnectUrl(settings);
+  const notes = cards.map((card) => buildAnkiNote(card, settings));
+  return addNotesWithReasons((action, params) => postAnki(url, action, params), notes);
 }
 
-async function handleGenerateCards(
-  text: string,
-  settings: Settings,
-): Promise<AnkiCardData[]> {
+async function handleGenerateCards(text: string): Promise<AnkiCardData[]> {
+  const settings = await loadSettings();
   const lang = settings.targetLanguage || "繁體中文";
   const systemPrompt = buildSystemPrompt(lang);
-  console.log("handleGenerateCards");
 
   if (settings.aiProvider === "gemini") {
     return generateWithGemini(text, systemPrompt, settings);
@@ -172,6 +159,5 @@ async function generateWithGemini(
     contents: text,
   });
 
-  console.log("generateWithGemini", response);
   return parseCards(response.text ?? "[]");
 }
