@@ -103,7 +103,7 @@ src/
 | ------------- | ----------------- | -------------------------------------------- |
 | AI 服務       | `OpenAI`          | 選擇 OpenAI 或 Google Gemini                 |
 | API Key       | （無）            | 對應服務的 API Key                           |
-| 模型          | `gpt-4o-mini`     | OpenAI 預設；Gemini 預設為 `gemini-2.5-flash` |
+| 模型          | `gpt-6-luna`      | OpenAI 預設；Gemini 預設為 `gemini-3.8-flash`。設定頁會向各服務的模型清單 API 取得對話／視覺模型並快取 6 小時；沒有 Key 或請求失敗時改用內建預設清單。已知模型的約略免費額度寫在 `src/shared/free-tier-limits.ts`。 |
 | 目標語言      | `繁體中文`        | 卡片生成的語言（共 8 種語言可選）            |
 
 ### 介面

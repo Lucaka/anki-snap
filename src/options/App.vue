@@ -1,21 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted, toRaw } from "vue";
+import { computed, onMounted, ref, toRaw, watch } from "vue";
+import {
+  formatFreeTierLimit,
+  freeTierDocsUrl,
+  lookupFreeTier,
+} from "@/shared/free-tier-limits";
+import { fallbackModels, loadModelCatalog, type ModelOption } from "@/shared/model-catalog";
 import { DEFAULT_SETTINGS, type Settings } from "@/shared/types";
 
 const settings = ref<Settings>({ ...DEFAULT_SETTINGS });
 const saved = ref(false);
-
-const OPENAI_MODEL_OPTIONS = [
-  { value: "gpt-4o-mini", label: "GPT-4o Mini（快速、低費用）" },
-  { value: "gpt-4o", label: "GPT-4o（高品質）" },
-];
-
-const GEMINI_MODEL_OPTIONS = [
-  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash（快速、低費用）" },
-  { value: "gemini-2.5-pro-preview-03-25", label: "Gemini 2.5 Pro（高品質）" },
-  { value: "gemma-4-26b-a4b-it", label: "Gemma 4 26B" },
-  { value: "gemma-4-31b-it", label: "Gemma 4 31B" },
-];
+const modelListNote = ref("");
+const openaiModels = ref<ModelOption[]>(fallbackModels("openai"));
+const geminiModels = ref<ModelOption[]>(fallbackModels("gemini"));
 
 const LANGUAGE_OPTIONS = [
   "繁體中文",
@@ -28,12 +25,85 @@ const LANGUAGE_OPTIONS = [
   "Deutsch",
 ];
 
+const selectedModelId = computed(() =>
+  settings.value.aiProvider === "gemini" ? settings.value.geminiModel : settings.value.openaiModel,
+);
+
+const selectedFreeTier = computed(() => lookupFreeTier(selectedModelId.value));
+
+function modelOptionLabel(option: ModelOption): string {
+  const limit = lookupFreeTier(option.id);
+  if (limit === undefined) return option.label;
+  return `${option.label} · ${formatFreeTierLimit(limit)}`;
+}
+
+function freeTierOptionTitle(modelId: string): string | undefined {
+  const limit = lookupFreeTier(modelId);
+  if (limit === undefined) return undefined;
+  return `${formatFreeTierLimit(limit)}（約略）`;
+}
+
+const activeModelOptions = computed(() => {
+  const provider = settings.value.aiProvider;
+  const models = provider === "gemini" ? geminiModels.value : openaiModels.value;
+  const current = provider === "gemini" ? settings.value.geminiModel : settings.value.openaiModel;
+  if (current && !models.some((model) => model.id === current)) {
+    return [{ id: current, label: `${current}（已儲存）` }, ...models];
+  }
+  return models;
+});
+
+let refreshSerial = 0;
+let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function refreshModels() {
+  const serial = ++refreshSerial;
+  const provider = settings.value.aiProvider;
+  const apiKey = (
+    provider === "gemini" ? settings.value.geminiApiKey : settings.value.openaiApiKey
+  ).trim();
+  if (apiKey) modelListNote.value = "正在載入模型清單…";
+
+  const result = await loadModelCatalog(provider, apiKey);
+  if (serial !== refreshSerial) return;
+
+  if (provider === "gemini") geminiModels.value = result.models;
+  else openaiModels.value = result.models;
+
+  if (result.source === "network" || result.source === "cache") {
+    modelListNote.value = "";
+    return;
+  }
+  modelListNote.value =
+    result.source === "stale-cache"
+      ? "無法重新取得模型清單，顯示上次快取的結果。"
+      : apiKey
+        ? "無法從服務取得模型清單，已改用預設清單。"
+        : "輸入 API Key 後會自動載入可用模型。";
+}
+
+function scheduleRefresh() {
+  if (refreshTimer) clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    void refreshModels();
+  }, 400);
+}
+
 onMounted(async () => {
   const stored = await chrome.storage.sync.get(
     DEFAULT_SETTINGS as unknown as Record<string, unknown>,
   );
   settings.value = stored as unknown as Settings;
+  await refreshModels();
 });
+
+watch(
+  () =>
+    [settings.value.aiProvider, settings.value.openaiApiKey, settings.value.geminiApiKey] as const,
+  () => {
+    scheduleRefresh();
+  },
+);
 
 async function save() {
   await chrome.storage.sync.set(toRaw(settings.value));
@@ -96,10 +166,16 @@ async function save() {
               v-model="settings.openaiModel"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
-              <option v-for="opt in OPENAI_MODEL_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
+              <option
+                v-for="opt in activeModelOptions"
+                :key="opt.id"
+                :value="opt.id"
+                :title="freeTierOptionTitle(opt.id)"
+              >
+                {{ modelOptionLabel(opt) }}
               </option>
             </select>
+            <p v-if="modelListNote" class="mt-1 text-xs text-gray-400">{{ modelListNote }}</p>
           </div>
         </template>
 
@@ -124,12 +200,30 @@ async function save() {
               v-model="settings.geminiModel"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
-              <option v-for="opt in GEMINI_MODEL_OPTIONS" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
+              <option
+                v-for="opt in activeModelOptions"
+                :key="opt.id"
+                :value="opt.id"
+                :title="freeTierOptionTitle(opt.id)"
+              >
+                {{ modelOptionLabel(opt) }}
               </option>
             </select>
+            <p v-if="modelListNote" class="mt-1 text-xs text-gray-400">{{ modelListNote }}</p>
           </div>
         </template>
+
+        <p v-if="selectedFreeTier !== undefined" class="text-xs text-gray-400">
+          約略值，實際限制可能不同。
+          <a
+            :href="freeTierDocsUrl(selectedModelId)"
+            class="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            查看官方速率限制
+          </a>
+        </p>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1"> 卡片說明語言 </label>
