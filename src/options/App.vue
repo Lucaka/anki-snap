@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { loadSettings, saveSettings } from "@/shared/settings-store";
+import { GEMINI_TTS_LIMITS_URL } from "@/shared/tts";
 import { formatTagInput, parseTags } from "@/shared/tags";
 import { DEFAULT_SETTINGS, type Settings } from "@/shared/types";
 
@@ -169,6 +170,39 @@ async function save() {
             />
           </button>
         </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-700">加入卡片時附上單字發音</p>
+            <p class="text-xs text-gray-400 mt-0.5">
+              預設關閉。有 OpenAI API Key 時使用 OpenAI 語音；只有 Gemini Key 時改用 Gemini TTS。
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="settings.pronunciation"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            :class="settings.pronunciation ? 'bg-blue-600' : 'bg-gray-200'"
+            @click="settings.pronunciation = !settings.pronunciation"
+          >
+            <span
+              class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+              :class="settings.pronunciation ? 'translate-x-6' : 'translate-x-1'"
+            />
+          </button>
+        </div>
+        <p v-if="settings.pronunciation" class="text-xs text-gray-400">
+          Gemini TTS 免費額度大約是每分鐘 3 次、每天 15 次。
+          <a
+            :href="GEMINI_TTS_LIMITS_URL"
+            class="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            官方速率限制
+          </a>
+        </p>
       </div>
 
       <!-- Anki Section -->

@@ -37,6 +37,7 @@ export interface Message<T = unknown> {
 export type AiProvider = "openai" | "gemini";
 
 export interface Settings {
+  pronunciation: boolean;
   ankiConnectUrl: string;
   defaultDeck: string;
   defaultTags: string[];
@@ -53,6 +54,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  pronunciation: false,
   ankiConnectUrl: "http://localhost:8765",
   defaultDeck: "預設",
   defaultTags: [],
