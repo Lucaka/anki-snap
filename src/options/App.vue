@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, toRaw } from "vue";
+import { ref, onMounted } from "vue";
+import { loadSettings, saveSettings } from "@/shared/settings-store";
+import { formatTagInput, parseTags } from "@/shared/tags";
 import { DEFAULT_SETTINGS, type Settings } from "@/shared/types";
 
 const settings = ref<Settings>({ ...DEFAULT_SETTINGS });
+const tagsText = ref("");
 const saved = ref(false);
 
 const OPENAI_MODEL_OPTIONS = [
@@ -29,14 +32,13 @@ const LANGUAGE_OPTIONS = [
 ];
 
 onMounted(async () => {
-  const stored = await chrome.storage.sync.get(
-    DEFAULT_SETTINGS as unknown as Record<string, unknown>,
-  );
-  settings.value = stored as unknown as Settings;
+  settings.value = await loadSettings();
+  tagsText.value = formatTagInput(settings.value.defaultTags);
 });
 
 async function save() {
-  await chrome.storage.sync.set(toRaw(settings.value));
+  settings.value.defaultTags = parseTags(tagsText.value);
+  await saveSettings(settings.value);
   saved.value = true;
   setTimeout(() => (saved.value = false), 2000);
 }
@@ -87,7 +89,7 @@ async function save() {
               autocomplete="off"
             />
             <p class="mt-1 text-xs text-gray-400">
-              從 platform.openai.com 取得，存於本機瀏覽器，不會上傳。
+              從 platform.openai.com 取得。存在此瀏覽器的本機空間，不會經由 Chrome 同步上傳。
             </p>
           </div>
           <div>
@@ -115,7 +117,7 @@ async function save() {
               autocomplete="off"
             />
             <p class="mt-1 text-xs text-gray-400">
-              從 aistudio.google.com 取得，存於本機瀏覽器，不會上傳。
+              從 aistudio.google.com 取得。存在此瀏覽器的本機空間，不會經由 Chrome 同步上傳。
             </p>
           </div>
           <div>
@@ -199,16 +201,10 @@ async function save() {
             <span class="text-gray-400 font-normal">（以逗號分隔）</span>
           </label>
           <input
-            :value="settings.defaultTags?.join(', ')"
+            v-model="tagsText"
             type="text"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="language, vocab"
-            @input="
-              settings.defaultTags = ($event.target as HTMLInputElement).value
-                .split(',')
-                .map((t) => t.trim())
-                .filter(Boolean)
-            "
           />
         </div>
 
