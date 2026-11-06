@@ -1,7 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
-import { addNotesWithReasons, buildAnkiNote, postAnki, resolveAnkiConnectUrl } from "@/shared/anki";
+import { addNotesWithReasons, postAnki, resolveAnkiConnectUrl } from "@/shared/anki";
 import { parseCards } from "@/shared/parse-cards";
 import { loadSettings } from "@/shared/settings-store";
+import { noteWithPronunciation, synthesizeSpeech, type PreparedNote } from "@/shared/tts";
 import type { AnkiCardData, Message, Settings } from "@/shared/types";
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -80,8 +81,22 @@ function buildSystemPrompt(lang: string): string {
 async function addCards(cards: AnkiCardData[]) {
   const settings = await loadSettings();
   const url = resolveAnkiConnectUrl(settings);
-  const notes = cards.map((card) => buildAnkiNote(card, settings));
-  return addNotesWithReasons((action, params) => postAnki(url, action, params), notes);
+  const prepared: PreparedNote[] = [];
+  for (const card of cards) {
+    prepared.push(
+      await noteWithPronunciation(card, settings, (route, text) =>
+        synthesizeSpeech(route, text, settings),
+      ),
+    );
+  }
+  const results = await addNotesWithReasons(
+    (action, params) => postAnki(url, action, params),
+    prepared.map((item) => item.note),
+  );
+  return results.map((result, index) => ({
+    ...result,
+    audioSkipped: prepared[index]?.audioSkipped ?? false,
+  }));
 }
 
 async function handleGenerateCards(text: string): Promise<AnkiCardData[]> {

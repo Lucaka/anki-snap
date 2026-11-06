@@ -8,6 +8,7 @@
 - **右鍵選單**：選取文字後右鍵，點選「Snap to Anki」開啟 Snap 面板
 - **擴充功能彈出視窗**：點選工具列圖示，手動觸發 Snap
 - **設定頁面**：自訂 AI 服務、AnkiConnect 網址、預設牌組與預設標籤
+- **單字發音（預設關閉）**：加入卡片時可附上發音。有 OpenAI API Key 就用 OpenAI 語音；只有 Gemini Key 時改用 Gemini TTS。面板上的「試聽」使用瀏覽器語音，不寫入 Anki
 
 ### Snap 面板互動
 

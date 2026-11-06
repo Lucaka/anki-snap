@@ -168,15 +168,23 @@ function showCards(cards: AnkiCardData[]) {
     const el = document.createElement("div");
     el.className = "as-card";
     el.innerHTML = `
-      <label class="as-card-label">
-        <input type="checkbox" class="as-cb" data-i="${i}" checked />
-        <div class="as-card-info">
-          <div class="as-front">${esc(card.front)}</div>
-          <div class="as-back">${esc(card.back)}</div>
-          ${card.example ? `<div class="as-ex">例句：${esc(card.example)}</div>` : ""}
-          ${card.related ? `<div class="as-rel">同家族：${esc(card.related)}</div>` : ""}
-        </div>
-      </label>`;
+      <div class="as-card-top">
+        <label class="as-card-label">
+          <input type="checkbox" class="as-cb" data-i="${i}" checked />
+          <div class="as-card-info">
+            <div class="as-front">${esc(card.front)}</div>
+            <div class="as-back">${esc(card.back)}</div>
+            ${card.example ? `<div class="as-ex">例句：${esc(card.example)}</div>` : ""}
+            ${card.related ? `<div class="as-rel">同家族：${esc(card.related)}</div>` : ""}
+          </div>
+        </label>
+        <button type="button" class="as-speak">試聽</button>
+      </div>`;
+    el.querySelector(".as-speak")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      previewPronunciation(card.front);
+    });
     el.querySelector(".as-cb")?.addEventListener("change", (e) => {
       const cb = e.target as HTMLInputElement;
       cb.checked ? selectedIndices.add(i) : selectedIndices.delete(i);
@@ -189,6 +197,13 @@ function showCards(cards: AnkiCardData[]) {
   if (footer) footer.style.display = "flex";
   panelEl?.querySelector(".as-add-btn")?.addEventListener("click", onAddClick);
   updateFooter();
+}
+
+function previewPronunciation(text: string) {
+  const synth = window.speechSynthesis;
+  if (!synth || !text.trim()) return;
+  synth.cancel();
+  synth.speak(new SpeechSynthesisUtterance(text));
 }
 
 function updateFooter() {
@@ -552,10 +567,28 @@ const STYLES = `
   overflow: hidden;
 }
 .as-card:last-child { margin-bottom: 0; }
+.as-card-top {
+  display: flex;
+  align-items: flex-start;
+}
+.as-speak {
+  margin: 10px 10px 0 0;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.as-speak:hover { background: #f3f4f6; }
 .as-card-label {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
   padding: 11px 12px;
   cursor: pointer;
 }
