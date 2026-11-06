@@ -31,5 +31,9 @@
     }
   ],
   "permissions": ["storage", "activeTab", "scripting", "contextMenus"],
-  "host_permissions": ["http://localhost/*", "https://api.openai.com/*"]
+  "host_permissions": [
+    "http://localhost/*",
+    "https://api.openai.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ]
 }

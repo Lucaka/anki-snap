@@ -1,4 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
+import {
+  buildGeminiGenerateConfig,
+  buildOpenAiChatBody,
+  DEFAULT_GEMINI_MODEL,
+  DEFAULT_OPENAI_MODEL,
+} from "@/shared/model-catalog";
 import type { AnkiCardData, Message, Settings } from "@/shared/types";
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -125,14 +131,9 @@ async function generateWithOpenAI(
       "Content-Type": "application/json",
       Authorization: `Bearer ${settings.openaiApiKey}`,
     },
-    body: JSON.stringify({
-      model: settings.openaiModel || "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: text },
-      ],
-      temperature: 0.3,
-    }),
+    body: JSON.stringify(
+      buildOpenAiChatBody(settings.openaiModel || DEFAULT_OPENAI_MODEL, systemPrompt, text),
+    ),
   });
 
   if (!response.ok) {
@@ -161,14 +162,11 @@ async function generateWithGemini(
   }
 
   const ai = new GoogleGenAI({ apiKey: settings.geminiApiKey });
-  const model = settings.geminiModel || "gemini-2.5-flash";
+  const model = settings.geminiModel || DEFAULT_GEMINI_MODEL;
 
   const response = await ai.models.generateContent({
     model,
-    config: {
-      systemInstruction: systemPrompt,
-      temperature: 0.3,
-    },
+    config: buildGeminiGenerateConfig(model, systemPrompt),
     contents: text,
   });
 

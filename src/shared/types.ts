@@ -1,3 +1,5 @@
+import { DEFAULT_GEMINI_MODEL, DEFAULT_OPENAI_MODEL } from "@/shared/model-catalog";
+
 export interface AnkiCard {
   front: string;
   back: string;
@@ -63,7 +65,7 @@ export const DEFAULT_SETTINGS: Settings = {
   openaiApiKey: "",
   showFloatingIcon: true,
   targetLanguage: "繁體中文",
-  openaiModel: "gpt-4o-mini",
+  openaiModel: DEFAULT_OPENAI_MODEL,
   geminiApiKey: "",
-  geminiModel: "gemini-2.5-flash",
+  geminiModel: DEFAULT_GEMINI_MODEL,
 };
